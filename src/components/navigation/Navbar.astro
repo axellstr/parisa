@@ -12,7 +12,7 @@ import foreverImage from '../../assets/images/forever/forever_parisa.png';
 import bespokeImage from '../../assets/images/collections/dhero.png';
 import Marquee from '../ui/Marquee.astro';
 // Import logo
-import logoDark from '../../assets/images/ui/Logo_dark.svg';
+import wordmark from '../../assets/images/ui/PARYSA-wordmark.svg';
 ---
 
 <nav class="navbar fade-in-three">
@@ -171,7 +171,7 @@ import logoDark from '../../assets/images/ui/Logo_dark.svg';
       <!-- Center - Logo -->
       <div class="nav-center">
         <a href="/" class="logo-link">
-          <img src={logoDark.src} alt="Parisa London" class="logo" />
+          <img src={wordmark.src} alt="Parisa London" class="logo" />
         </a>
       </div>
 
@@ -204,7 +204,7 @@ import logoDark from '../../assets/images/ui/Logo_dark.svg';
     <!-- Mobile Menu Header -->
     <header class="mobile-menu-header">
       <div class="mobile-menu-brand">
-        <img src={logoDark.src} alt="Parisa London" class="mobile-logo" />
+        <img src={wordmark.src} alt="Parisa London" class="mobile-logo" />
       </div>
       <button class="mobile-menu-close" id="mobile-menu-close" aria-label="Close menu">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -650,94 +650,61 @@ import logoDark from '../../assets/images/ui/Logo_dark.svg';
     }
   });
 
-  // Professional dropdown navigation with delayed close and animations
+  // Dropdown navigation with hover intent. JS only toggles .dropdown-open;
+  // the open/close motion lives in Navbar.css as transitions, so it can be
+  // interrupted and reversed at any point.
   (function initDropdownNavigation() {
     const dropdowns = document.querySelectorAll('.nav-dropdown');
-    const CLOSE_DELAY = 2000; // 2 seconds delay before closing
-    const ANIMATION_DURATION = 400; // Time for closing animation to complete (0.3s animation + 0.1s buffer)
-    
+    const OPEN_DELAY = 80; // Ignore the pointer just passing over the trigger
+    const CLOSE_DELAY = 300; // Grace period to travel between trigger and panel
+
     dropdowns.forEach(dropdown => {
-      let closeTimer = null;
-      let animationTimer = null;
+      let timer = null;
       const dropdownMenu = dropdown.querySelector('.dropdown-menu');
       const dropdownTrigger = dropdown.querySelector('.dropdown-trigger');
-      
+
       if (!dropdownMenu || !dropdownTrigger) return;
-      
-      // Function to open dropdown
-      function openDropdown() {
-        // Clear any pending close timers
-        if (closeTimer) {
-          clearTimeout(closeTimer);
-          closeTimer = null;
+
+      // Set open state, replacing any pending open/close
+      function setOpen(open, delay = 0) {
+        clearTimeout(timer);
+        timer = null;
+        if (dropdown.classList.contains('dropdown-open') === open) return;
+        if (delay === 0) {
+          dropdown.classList.toggle('dropdown-open', open);
+          return;
         }
-        if (animationTimer) {
-          clearTimeout(animationTimer);
-          animationTimer = null;
-        }
-        
-        // Remove closing state if present and add open state
-        dropdown.classList.remove('dropdown-closing');
-        dropdown.classList.add('dropdown-open');
+        timer = setTimeout(() => {
+          dropdown.classList.toggle('dropdown-open', open);
+          timer = null;
+        }, delay);
       }
-      
-      // Function to close dropdown with animation
-      function closeDropdown() {
-        // Start closing animation
-        dropdown.classList.remove('dropdown-open');
-        dropdown.classList.add('dropdown-closing');
-        
-        // After animation completes, remove closing class
-        animationTimer = setTimeout(() => {
-          dropdown.classList.remove('dropdown-closing');
-          animationTimer = null;
-        }, ANIMATION_DURATION);
-      }
-      
-      // Function to schedule dropdown close with delay
-      function scheduleClose() {
-        // Clear any existing timer
-        if (closeTimer) {
-          clearTimeout(closeTimer);
-        }
-        // Set new timer to close after delay
-        closeTimer = setTimeout(() => {
-          closeDropdown();
-          closeTimer = null;
-        }, CLOSE_DELAY);
-      }
-      
+
       // Only open dropdown when hovering the trigger link
-      dropdownTrigger.addEventListener('mouseenter', openDropdown);
-      
-      // Schedule close when leaving the trigger
-      dropdownTrigger.addEventListener('mouseleave', scheduleClose);
-      
-      // Keep dropdown open when hovering the dropdown menu
-      dropdownMenu.addEventListener('mouseenter', openDropdown);
-      
-      // Schedule close when leaving the dropdown menu
-      dropdownMenu.addEventListener('mouseleave', scheduleClose);
-      
-      // Optional: Close dropdown when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target)) {
-          if (closeTimer) {
-            clearTimeout(closeTimer);
-            closeTimer = null;
-          }
-          closeDropdown();
-        }
+      dropdownTrigger.addEventListener('mouseenter', () => setOpen(true, OPEN_DELAY));
+      dropdownTrigger.addEventListener('mouseleave', () => setOpen(false, CLOSE_DELAY));
+
+      // Keep dropdown open when hovering the dropdown menu (incl. its hover bridge)
+      dropdownMenu.addEventListener('mouseenter', () => setOpen(true));
+      dropdownMenu.addEventListener('mouseleave', () => setOpen(false, CLOSE_DELAY));
+
+      // Keyboard: open while focus is inside, close when it leaves
+      dropdown.addEventListener('focusin', () => setOpen(true));
+      dropdown.addEventListener('focusout', (e) => {
+        if (!dropdown.contains(e.relatedTarget)) setOpen(false);
       });
-      
-      // Optional: Close dropdown on Escape key
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target)) setOpen(false);
+      });
+
+      // Close dropdown on Escape key
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && dropdown.classList.contains('dropdown-open')) {
-          if (closeTimer) {
-            clearTimeout(closeTimer);
-            closeTimer = null;
-          }
-          closeDropdown();
+          // Hand focus back to the trigger before the panel's links are hidden
+          if (dropdownMenu.contains(document.activeElement)) dropdownTrigger.focus();
+          setOpen(false);
         }
       });
     });

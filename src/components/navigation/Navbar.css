@@ -81,7 +81,7 @@
 
 .logo {
 	height: 70px;
-	padding: 0.25rem;
+	padding: 20px 0.25rem;
 	margin: 0.5rem;
 	width: auto;
 }
@@ -147,63 +147,52 @@
 	align-items: center;
 }
 
-/* Extend hover area downward */
-.nav-dropdown::after {
-	content: '';
-	position: absolute;
-	top: 100%;
-	left: 0;
-	right: 0;
-	height: 20px;
-	background: transparent;
-	pointer-events: auto;
-}
-
 .dropdown-trigger {
 	cursor: pointer;
 	position: relative;
 }
 
-/* Dropdown menu */
+/* While open, extend the trigger's hover area down to the menu so the
+   pointer can travel to the panel without leaving */
+.nav-dropdown.dropdown-open .dropdown-trigger {
+	overflow: visible;
+}
+
+.nav-dropdown.dropdown-open .dropdown-trigger::before {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	height: 3rem;
+}
+
+/* Dropdown menu
+   The 20px top padding is the gap between navbar and panel; because it is
+   part of the menu it doubles as the hover bridge from trigger to panel. */
 .dropdown-menu {
 	position: absolute;
-	top: calc(100% - -20px);
+	top: 100%;
 	left: 0;
 	right: 0;
 	width: 100%;
-	max-height: 0;
-	overflow: hidden;
-	transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	padding-top: 20px;
 	z-index: var(--z-dropdown);
+	visibility: hidden;
 	pointer-events: none;
-}
-
-/* Create a hover bridge at the top of dropdown - always active */
-.dropdown-menu::before {
-	content: '';
-	position: absolute;
-	top: -20px;
-	left: 0;
-	right: 0;
-	height: 20px;
-	background: transparent;
-	pointer-events: auto;
+	/* Stay visible until the panel has finished closing */
+	transition: visibility 0s linear 0.3s;
 }
 
 /* JavaScript-controlled open state */
 .nav-dropdown.dropdown-open .dropdown-menu {
-	max-height: 600px;
-	transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+	visibility: visible;
 	pointer-events: auto;
+	transition-delay: 0s;
 }
 
-/* JavaScript-controlled closing state */
-.nav-dropdown.dropdown-closing .dropdown-menu {
-	max-height: 0;
-	transition: max-height 0.35s cubic-bezier(0.4, 0, 0.6, 1) 0.15s;
-	pointer-events: none;
-}
-
+/* Panel - revealed from the top edge. Base values are the closing motion,
+   the open state below overrides them with the opening motion. */
 .dropdown-container {
 	max-width: 1600px;
 	margin: 0 auto;
@@ -214,7 +203,19 @@
 	gap: 1.5rem;
 	background-color: rgb(255, 255, 255);
 	border: 1px solid color-mix(in srgb, var(--text-dark) 10%, transparent 50%);
-	pointer-events: auto;
+	opacity: 0;
+	clip-path: inset(0 0 100% 0);
+	transition:
+		clip-path 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+		opacity 0.2s ease 0.1s;
+}
+
+.nav-dropdown.dropdown-open .dropdown-container {
+	opacity: 1;
+	clip-path: inset(0 0 0 0);
+	transition:
+		clip-path 0.55s cubic-bezier(0.32, 0.72, 0, 1),
+		opacity 0.2s ease;
 }
 
 /* ------------------------------------------------------------------
@@ -227,72 +228,47 @@
 	text-decoration: none;
 	padding: 0;
 	background: transparent;
-	transition: opacity 0.2s ease;
 	position: relative;
 	gap: 0.75rem;
 	flex: 1;
 	min-width: 0;
 	opacity: 0;
 	transform: translateY(-12px);
-	animation: none;
+	/* Closing - all items slide up together */
+	transition: opacity 0.18s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Stagger animation for collection items */
-@keyframes collectionFadeIn {
-	0% {
-		opacity: 0;
-		transform: translateY(-12px);
-	}
-	100% {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-@keyframes collectionFadeOut {
-	0% {
-		opacity: 1;
-		transform: translateY(0);
-	}
-	100% {
-		opacity: 0;
-		transform: translateY(-12px);
-	}
-}
-
-/* Opening animation with stagger */
+/* Opening - items settle in with a stagger. Transitions (rather than
+   keyframes) so re-hovering mid-close reverses from where it is. */
 .nav-dropdown.dropdown-open .collection-dropdown-item {
-	animation: collectionFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+	opacity: 1;
+	transform: translateY(0);
+	transition: opacity 0.45s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .nav-dropdown.dropdown-open .collection-dropdown-item:nth-child(1) {
-	animation-delay: 0.15s;
+	transition-delay: 0.06s;
 }
 
 .nav-dropdown.dropdown-open .collection-dropdown-item:nth-child(2) {
-	animation-delay: 0.25s;
+	transition-delay: 0.105s;
 }
 
 .nav-dropdown.dropdown-open .collection-dropdown-item:nth-child(3) {
-	animation-delay: 0.35s;
+	transition-delay: 0.15s;
 }
 
 .nav-dropdown.dropdown-open .collection-dropdown-item:nth-child(4) {
-	animation-delay: 0.45s;
+	transition-delay: 0.195s;
 }
 
 .nav-dropdown.dropdown-open .collection-dropdown-item:nth-child(5) {
-	animation-delay: 0.55s;
+	transition-delay: 0.24s;
 }
 
-/* Closing animation - all items slide up together */
-.nav-dropdown.dropdown-closing .collection-dropdown-item {
-	animation: collectionFadeOut 0.3s cubic-bezier(0.4, 0, 0.6, 1) forwards;
-	animation-delay: 0s;
-}
-
-.collection-dropdown-item:hover {
-	opacity: 0.85 !important;
+/* Hover dim sits on the children so it isn't held back by the stagger delay */
+.collection-dropdown-item:hover > * {
+	opacity: 0.85;
 }
 
 .collection-dropdown-image {
@@ -328,6 +304,7 @@
 	justify-content: flex-start;
 	width: 100%;
 	gap: 1rem;
+	transition: opacity 0.2s ease;
 }
 
 .collection-dropdown-title {
@@ -336,7 +313,7 @@
 	color: var(--text-dark);
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	transition: color 0.2s ease;
+	transition: color 0.2s ease, opacity 0.2s ease;
 	white-space: nowrap;
 	text-decoration: none;
 	display: block;
@@ -565,7 +542,7 @@
 }
 
 .mobile-logo {
-	height: 40px;
+	height: 22px;
 	width: auto;
 }
 
@@ -878,7 +855,7 @@ body.cart-drawer-open {
 	
 	.logo {
 		height: 52px;
-		padding: 0.25rem;
+		padding: 14px 0.25rem;
 	}
 	
 	/* Right side actions */
@@ -931,7 +908,7 @@ body.cart-drawer-open {
 	}
 	
 	.mobile-logo {
-		height: 35px;
+		height: 20px;
 	}
 	
 	.mobile-menu-nav {
@@ -991,6 +968,12 @@ body.cart-drawer-open {
 	.mobile-menu-content,
 	.hamburger-line {
 		transition: none;
+	}
+
+	.nav-dropdown .dropdown-menu,
+	.nav-dropdown .dropdown-container,
+	.nav-dropdown .collection-dropdown-item {
+		transition: none !important;
 	}
 }
 
